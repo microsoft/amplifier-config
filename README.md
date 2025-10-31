@@ -268,6 +268,21 @@ removed = config.remove_source_override(
 # Returns: True if removed, False if not found
 ```
 
+##### Advanced Settings Management
+
+```python
+# Update arbitrary settings at a scope
+config.update_settings(
+    updates={"custom": {"feature": "enabled"}},
+    scope=Scope.PROJECT
+)
+# Deep merges updates into PROJECT scope settings
+
+# Get path for a scope
+path = config.scope_to_path(Scope.LOCAL)
+# Returns: Path object for the LOCAL scope
+```
+
 ### Utility Functions
 
 #### deep_merge
@@ -277,27 +292,26 @@ from amplifier_config import deep_merge
 
 result = deep_merge(
     base={"a": {"b": 1, "c": 2}},
-    overlay={"a": {"b": 999, "d": 3}},
-    remove_none=False
+    overlay={"a": {"b": 999, "d": 3}}
 )
 # Returns: {"a": {"b": 999, "c": 2, "d": 3}}
 
-# With None removal
+# Overlay values completely replace base values
 result = deep_merge(
     base={"a": {"b": 1, "c": 2}},
-    overlay={"a": {"b": None}},
-    remove_none=True
+    overlay={"a": {"b": 999}}
 )
-# Returns: {"a": {"c": 2}}  # b removed because overlay had None
+# Returns: {"a": {"b": 999, "c": 2}}  # c preserved, b overridden
 ```
 
 **Parameters**:
 
 - `base` (dict): Base dictionary
 - `overlay` (dict): Overlay dictionary (values take precedence)
-- `remove_none` (bool): If True, None values in overlay delete base keys
 
 **Returns**: New dictionary with merged values (base and overlay unchanged)
+
+**Note**: None values in overlay are treated as regular values, not deletion markers. To remove a key, omit it from the overlay.
 
 ---
 
@@ -313,7 +327,7 @@ from pathlib import Path
 paths = ConfigPaths(
     user=Path.home() / ".amplifier" / "settings.yaml",
     project=Path(".amplifier/settings.yaml"),
-    local=Path(".amplifier/settings.local.yaml",
+    local=Path(".amplifier/settings.local.yaml"),
 )
 
 config = ConfigManager(paths=paths)
@@ -509,19 +523,28 @@ With deep merge, overlay modifies only specified values. Without it, overlay mus
 ### Exceptions
 
 ```python
-from amplifier_config import ConfigError
+from amplifier_config import ConfigError, ConfigFileError, ConfigValidationError
 
 try:
     config.set_active_profile("dev", scope=Scope.LOCAL)
+except ConfigFileError as e:
+    # Raised when file I/O fails (write errors, permission denied, etc.)
+    print(f"File error: {e}")
+except ConfigValidationError as e:
+    # Raised when configuration data is invalid
+    print(f"Validation error: {e}")
 except ConfigError as e:
-    print(f"Error: {e.message}")
-    print(f"Context: {e.context}")
+    # Base exception for all config errors
+    print(f"Config error: {e}")
 ```
 
-**ConfigError fields**:
+**Exception hierarchy**:
 
-- `message` (str): Human-readable error description
-- `context` (dict): Additional error context (paths, values, etc.)
+- `ConfigError` - Base exception for all configuration errors
+- `ConfigFileError` - File I/O errors (extends ConfigError)
+- `ConfigValidationError` - Validation errors (extends ConfigError)
+
+**Usage**: Standard Python exception pattern. Access error message via `str(e)` or string formatting.
 
 ### Graceful Degradation
 
