@@ -458,5 +458,3 @@ uv add pyyaml
 
 - **[SPECIFICATION.md](./SPECIFICATION.md)** - Complete technical specification
 - **[amplifier-config README](../README.md)** - API reference and installation
-- **[amplifier-profiles](https://github.com/microsoft/amplifier-profiles)** - Profile system that uses this config library
-- **[amplifier-module-resolution](https://github.com/microsoft/amplifier-module-resolution)** - Module resolution that uses this config library

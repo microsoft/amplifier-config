@@ -75,9 +75,24 @@ config.add_source_override(
 
 Configuration resolves in precedence order (highest wins):
 
-1. **LOCAL** (highest) - Developer-specific overrides, typically not committed
-2. **PROJECT** (middle) - Team-shared settings, committed to version control
-3. **USER** (lowest) - User-global defaults
+```
+┌─────────────────────────────────────────────────────────┐
+│ LOCAL SCOPE (highest precedence)                        │
+│ .amplifier/settings.local.yaml                          │
+│ Developer-specific overrides (gitignored)               │
+├─────────────────────────────────────────────────────────┤
+│ PROJECT SCOPE (middle precedence)                       │
+│ .amplifier/settings.yaml                                │
+│ Team-shared settings (committed to git)                 │
+├─────────────────────────────────────────────────────────┤
+│ USER SCOPE (lowest precedence)                          │
+│ ~/.amplifier/settings.yaml                              │
+│ User-global defaults (applies to all projects)          │
+└─────────────────────────────────────────────────────────┘
+
+Resolution: Check LOCAL → PROJECT → USER → None
+Merging: USER < PROJECT < LOCAL (deep recursive merge)
+```
 
 **→ See [Resolution Algorithm Specification](docs/SPECIFICATION.md#three-scope-resolution-algorithm) for complete technical details.**
 

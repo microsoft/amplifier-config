@@ -12,9 +12,24 @@ This document is the authoritative source for all technical contracts in amplifi
 
 Configuration resolves in strict precedence order (highest wins):
 
-1. **LOCAL** (highest) - Developer-specific overrides
-2. **PROJECT** (middle) - Team-shared settings
-3. **USER** (lowest) - User-global defaults
+```
+┌─────────────────────────────────────────────────────────┐
+│ LOCAL SCOPE (highest precedence)                        │
+│ .amplifier/settings.local.yaml                          │
+│ Developer-specific overrides (gitignored)               │
+├─────────────────────────────────────────────────────────┤
+│ PROJECT SCOPE (middle precedence)                       │
+│ .amplifier/settings.yaml                                │
+│ Team-shared settings (committed to git)                 │
+├─────────────────────────────────────────────────────────┤
+│ USER SCOPE (lowest precedence)                          │
+│ ~/.amplifier/settings.yaml                              │
+│ User-global defaults (applies to all projects)          │
+└─────────────────────────────────────────────────────────┘
+
+Resolution: Check LOCAL → PROJECT → USER → None
+Merging: USER < PROJECT < LOCAL (deep recursive merge)
+```
 
 ### Resolution Rules
 
@@ -508,26 +523,6 @@ Minimal dependencies (only pyyaml optionally) enable maximum reusability across 
 - You want complete replacement (not merge) on override
 - You need complex validation (build on top, don't fork)
 - You need database-backed config (different mechanism entirely)
-
----
-
-## Future Considerations
-
-**Not currently supported** (by design - YAGNI):
-- Automatic file watching and reload
-- Configuration schemas with validation
-- Concurrent write locking
-- Configuration encryption
-- Remote configuration backends
-
-If these become proven needs (≥2 applications require them), they can be added as **optional mechanisms** without breaking existing interfaces.
-
-**Kernel promotion criteria** (NOT met):
-- Amplifier would need ≥3 applications (CLI, Web, Desktop) using this library
-- All applications using identical path conventions
-- Convergence on single "blessed" configuration strategy
-
-**Current status**: Library remains in userspace (applications inject policy).
 
 ---
 
