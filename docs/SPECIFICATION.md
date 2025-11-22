@@ -187,7 +187,7 @@ providers:
     temperature: 0.5
     max_tokens: 100000
   openai:
-    model: gpt-5
+    model: gpt-5.1
     temperature: 0.7
 
 # PROJECT: Override just the model (2 lines)
