@@ -301,7 +301,7 @@ class ConfigManager:
             return None
 
         try:
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
                 return data if data else {}
         except Exception as e:
@@ -325,7 +325,7 @@ class ConfigManager:
         path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 yaml.dump(data, f, default_flow_style=False, sort_keys=False)
         except Exception as e:
             raise ConfigFileError(f"Failed to write configuration to {path}: {e}") from e
