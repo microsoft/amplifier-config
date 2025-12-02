@@ -206,6 +206,78 @@ class ConfigManager:
         logger.info(f"Removed {scope.value} source override for '{module_id}'")
         return True
 
+    # ===== Collection Source Overrides =====
+
+    def get_collection_sources(self) -> dict[str, str]:
+        """Get merged collection source overrides from all scopes.
+
+        Merge order (later overrides earlier):
+        1. User settings (lowest priority)
+        2. Project settings
+        3. Local settings (highest priority)
+
+        Returns:
+            Dictionary mapping collection_name -> source_uri
+        """
+        sources: dict[str, str] = {}
+
+        # Start with user settings (lowest priority)
+        user = self._read_yaml(self.paths.user)
+        if user and "collection_sources" in user:
+            sources.update(user["collection_sources"])
+
+        # Override with project settings
+        project = self._read_yaml(self.paths.project)
+        if project and "collection_sources" in project:
+            sources.update(project["collection_sources"])
+
+        # Override with local settings (highest priority)
+        local = self._read_yaml(self.paths.local)
+        if local and "collection_sources" in local:
+            sources.update(local["collection_sources"])
+
+        return sources
+
+    def add_collection_source_override(self, collection_name: str, source: str, scope: Scope = Scope.PROJECT) -> None:
+        """Add collection source override to specified scope.
+
+        Args:
+            collection_name: Collection name (e.g., "foundation")
+            source: Source URI (git URL or file path)
+            scope: Target scope (default: PROJECT)
+        """
+        target_path = self._scope_to_path(scope)
+        self._update_yaml(target_path, {"collection_sources": {collection_name: source}})
+        logger.info(f"Added {scope.value} collection source override for '{collection_name}': {source}")
+
+    def remove_collection_source_override(self, collection_name: str, scope: Scope = Scope.PROJECT) -> bool:
+        """Remove collection source override from specified scope.
+
+        Args:
+            collection_name: Collection name
+            scope: Target scope (default: PROJECT)
+
+        Returns:
+            True if removed, False if not found
+        """
+        target_path = self._scope_to_path(scope)
+        settings = self._read_yaml(target_path)
+
+        if not settings or "collection_sources" not in settings:
+            return False
+        if collection_name not in settings["collection_sources"]:
+            return False
+
+        del settings["collection_sources"][collection_name]
+
+        # Clean up empty collection_sources section
+        if not settings["collection_sources"]:
+            del settings["collection_sources"]
+
+        self._write_yaml(target_path, settings)
+        logger.info(f"Removed {scope.value} collection source override for '{collection_name}'")
+        return True
+
     # ===== Merged Settings =====
 
     def get_merged_settings(self) -> dict[str, Any]:
