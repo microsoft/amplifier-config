@@ -325,7 +325,7 @@ class ConfigManager:
         target_path = self._scope_to_path(scope)
         self._update_yaml(target_path, updates)
 
-    def scope_to_path(self, scope: Scope) -> Path:
+    def scope_to_path(self, scope: Scope) -> Path | None:
         """Get path for a given scope.
 
         Public accessor for scope-to-path mapping.
@@ -334,37 +334,51 @@ class ConfigManager:
             scope: Scope enum value
 
         Returns:
-            Path for the given scope
+            Path for the given scope, or None if scope is disabled
         """
         return self._scope_to_path(scope)
 
+    def is_scope_available(self, scope: Scope) -> bool:
+        """Check if a scope is available for read/write operations.
+
+        Args:
+            scope: Scope enum value
+
+        Returns:
+            True if scope is available (path is not None), False otherwise
+        """
+        return self._scope_to_path(scope) is not None
+
     # ===== Private Helpers =====
 
-    def _scope_to_path(self, scope: Scope) -> Path:
+    def _scope_to_path(self, scope: Scope) -> Path | None:
         """Convert Scope enum to Path.
 
         Args:
             scope: Scope enum value
 
         Returns:
-            Path for the given scope
+            Path for the given scope, or None if scope is disabled
         """
-        scope_map = {
+        scope_map: dict[Scope, Path | None] = {
             Scope.USER: self.paths.user,
             Scope.PROJECT: self.paths.project,
             Scope.LOCAL: self.paths.local,
         }
         return scope_map[scope]
 
-    def _read_yaml(self, path: Path) -> dict[str, Any] | None:
+    def _read_yaml(self, path: Path | None) -> dict[str, Any] | None:
         """Read YAML file.
 
         Args:
-            path: Path to YAML file
+            path: Path to YAML file, or None if scope is disabled
 
         Returns:
-            Dictionary from YAML or None if file doesn't exist
+            Dictionary from YAML, or None if file doesn't exist or path is None
         """
+        if path is None:
+            return None
+
         if not yaml:
             logger.warning("PyYAML not available - cannot read configuration files")
             return None
@@ -380,16 +394,19 @@ class ConfigManager:
             logger.warning(f"Failed to read configuration from {path}: {e}")
             return None
 
-    def _write_yaml(self, path: Path, data: dict[str, Any]) -> None:
+    def _write_yaml(self, path: Path | None, data: dict[str, Any]) -> None:
         """Write YAML file.
 
         Args:
-            path: Path to YAML file
+            path: Path to YAML file, or None if scope is disabled
             data: Dictionary to write
 
         Raises:
-            ConfigFileError: If write fails
+            ConfigFileError: If write fails or path is None
         """
+        if path is None:
+            raise ConfigFileError("Cannot write to disabled scope (path is None)")
+
         if not yaml:
             raise ConfigFileError("PyYAML not available - cannot write configuration files")
 
@@ -402,13 +419,19 @@ class ConfigManager:
         except Exception as e:
             raise ConfigFileError(f"Failed to write configuration to {path}: {e}") from e
 
-    def _update_yaml(self, path: Path, updates: dict[str, Any]) -> None:
+    def _update_yaml(self, path: Path | None, updates: dict[str, Any]) -> None:
         """Update YAML file with deep merge.
 
         Args:
-            path: Path to YAML file
+            path: Path to YAML file, or None if scope is disabled
             updates: Updates to merge into existing data
+
+        Raises:
+            ConfigFileError: If path is None (scope is disabled)
         """
+        if path is None:
+            raise ConfigFileError("Cannot update disabled scope (path is None)")
+
         existing = self._read_yaml(path) or {}
         merged = deep_merge(existing, updates)
         self._write_yaml(path, merged)

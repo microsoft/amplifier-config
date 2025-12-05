@@ -200,5 +200,6 @@ class TestConfigIntegration:
             assert manager.get_active_profile() == "test"
 
             # Verify files created at custom locations
+            assert custom_paths.local is not None  # We explicitly set it above
             assert custom_paths.local.exists()
             assert custom_paths.local.name == "local-overrides.yaml"
